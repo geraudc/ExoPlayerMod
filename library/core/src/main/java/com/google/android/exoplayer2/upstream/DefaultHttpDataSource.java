@@ -84,6 +84,8 @@ public class DefaultHttpDataSource implements HttpDataSource {
   private long bytesSkipped;
   private long bytesRead;
 
+  private static int requestNumber = 0;
+
   /**
    * @param userAgent The User-Agent string that should be used.
    * @param contentTypePredicate An optional {@link Predicate}. If a content type is rejected by the
@@ -197,6 +199,7 @@ public class DefaultHttpDataSource implements HttpDataSource {
 
     int responseCode;
     try {
+      Log.d(TAG,"Response...");
       responseCode = connection.getResponseCode();
     } catch (IOException e) {
       closeConnectionQuietly();
@@ -207,6 +210,7 @@ public class DefaultHttpDataSource implements HttpDataSource {
     // Check for a valid response code.
     if (responseCode < 200 || responseCode > 299) {
       Map<String, List<String>> headers = connection.getHeaderFields();
+
       closeConnectionQuietly();
       InvalidResponseCodeException exception =
           new InvalidResponseCodeException(responseCode, headers, dataSpec);
@@ -414,6 +418,15 @@ public class DefaultHttpDataSource implements HttpDataSource {
     }
     connection.setInstanceFollowRedirects(followRedirects);
     connection.setDoOutput(postBody != null);
+
+    String requestToPrint = "";
+    for (Map.Entry<String, List<String>> property : connection.getRequestProperties().entrySet()) {
+      requestToPrint = requestToPrint + "\n\t" + property.getKey() + " :";
+      for (String strings : property.getValue()) {
+        requestToPrint = requestToPrint + "\n\t" + strings;
+      }
+    }
+
     if (postBody != null) {
       connection.setRequestMethod("POST");
       if (postBody.length == 0) {
@@ -428,6 +441,8 @@ public class DefaultHttpDataSource implements HttpDataSource {
     } else {
       connection.connect();
     }
+    requestNumber++;
+    Log.d(TAG,"Request (" + requestNumber + ") to \"" + url + "\", " + requestToPrint);
     return connection;
   }
 
